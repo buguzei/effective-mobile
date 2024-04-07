@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/buguzei/effective-mobile/internal/models"
 	"github.com/buguzei/effective-mobile/internal/repo"
 	"github.com/buguzei/effective-mobile/pkg/logging"
@@ -18,11 +19,11 @@ func NewUseCase(repo repo.IRepo) *UseCase {
 	return &UseCase{repo: repo, l: logger}
 }
 
-func (uc UseCase) NewCars(cars []models.Car) error {
+func (uc UseCase) NewCars(ctx context.Context, cars []models.Car) error {
 	const funcName = "NewCars"
 
 	for _, car := range cars {
-		peopleID, err := uc.repo.GetPeopleByFullName(car.Owner.Name, car.Owner.Surname, car.Owner.Patronymic)
+		peopleID, err := uc.repo.GetPeopleByFullName(ctx, car.Owner.Name, car.Owner.Surname, car.Owner.Patronymic)
 		if err != nil {
 			uc.l.Error("error of scanning", logging.Fields{
 				"error": err,
@@ -33,7 +34,7 @@ func (uc UseCase) NewCars(cars []models.Car) error {
 		}
 
 		if peopleID == nil {
-			id, err := uc.repo.NewPeople(car.Owner)
+			id, err := uc.repo.NewPeople(ctx, car.Owner)
 			if err != nil {
 				uc.l.Error("error of adding people", logging.Fields{
 					"error": err,
@@ -48,7 +49,7 @@ func (uc UseCase) NewCars(cars []models.Car) error {
 
 		car.Owner.ID = *peopleID
 
-		err = uc.repo.NewCar(car)
+		err = uc.repo.NewCar(ctx, car)
 		if err != nil {
 			uc.l.Error("adding new car failed", logging.Fields{
 				"error": err,
@@ -62,10 +63,10 @@ func (uc UseCase) NewCars(cars []models.Car) error {
 	return nil
 }
 
-func (uc UseCase) DeleteCar(regNum string) error {
+func (uc UseCase) DeleteCar(ctx context.Context, regNum string) error {
 	const funcName = "DeleteCar"
 
-	err := uc.repo.DeleteCar(regNum)
+	err := uc.repo.DeleteCar(ctx, regNum)
 	if err != nil {
 		uc.l.Error("error of deleting car", logging.Fields{
 			"error": err,
@@ -78,10 +79,10 @@ func (uc UseCase) DeleteCar(regNum string) error {
 	return nil
 }
 
-func (uc UseCase) UpdateCar(updates models.Car, regNum string) error {
+func (uc UseCase) UpdateCar(ctx context.Context, updates models.Car, regNum string) error {
 	const funcName = "UpdateCar"
 
-	oldCar, err := uc.repo.GetCarByRegNum(regNum)
+	oldCar, err := uc.repo.GetCarByRegNum(ctx, regNum)
 	if err != nil {
 		uc.l.Error("error of getting car by regNum", logging.Fields{
 			"error": err,
@@ -91,7 +92,7 @@ func (uc UseCase) UpdateCar(updates models.Car, regNum string) error {
 		return err
 	}
 
-	owner, err := uc.repo.GetPeopleByID(oldCar.Owner.ID)
+	owner, err := uc.repo.GetPeopleByID(ctx, oldCar.Owner.ID)
 	if err != nil {
 		uc.l.Error("error of getting people by ID", logging.Fields{
 			"error": err,
@@ -105,7 +106,7 @@ func (uc UseCase) UpdateCar(updates models.Car, regNum string) error {
 
 	updatedCar := validateUpdate(*oldCar, updates)
 
-	updatedID, err := uc.repo.GetPeopleByFullName(updatedCar.Owner.Name, updatedCar.Owner.Surname, updatedCar.Owner.Patronymic)
+	updatedID, err := uc.repo.GetPeopleByFullName(ctx, updatedCar.Owner.Name, updatedCar.Owner.Surname, updatedCar.Owner.Patronymic)
 	if err != nil {
 		uc.l.Error("error of getting people by full name", logging.Fields{
 			"error": err,
@@ -116,7 +117,7 @@ func (uc UseCase) UpdateCar(updates models.Car, regNum string) error {
 	}
 
 	if updatedID == nil {
-		id, err := uc.repo.NewPeople(updates.Owner)
+		id, err := uc.repo.NewPeople(ctx, updates.Owner)
 		if err != nil {
 			uc.l.Error("error of adding new people", logging.Fields{
 				"error": err,
@@ -131,7 +132,7 @@ func (uc UseCase) UpdateCar(updates models.Car, regNum string) error {
 
 	updatedCar.Owner.ID = *updatedID
 
-	err = uc.repo.UpdateCar(updatedCar, regNum)
+	err = uc.repo.UpdateCar(ctx, updatedCar, regNum)
 	if err != nil {
 		uc.l.Error("error of updating car", logging.Fields{
 			"error": err,
@@ -172,10 +173,10 @@ func validateUpdate(oldCar, newCar models.Car) models.Car {
 	return oldCar
 }
 
-func (uc UseCase) GetCars(filters models.Car) ([]models.Car, error) {
+func (uc UseCase) GetCars(ctx context.Context, filters models.Car) ([]models.Car, error) {
 	const funcName = "GetCars"
 
-	cars, err := uc.repo.GetCarsByFilters(filters)
+	cars, err := uc.repo.GetCarsByFilters(ctx, filters)
 	if err != nil {
 		uc.l.Error("error of getting car using filters", logging.Fields{
 			"error": err,

@@ -5,11 +5,6 @@ definitions:
       regNum:
         type: string
     type: object
-  http.getCarsRequest:
-    properties:
-      filters:
-        $ref: '#/definitions/models.Car'
-    type: object
   http.getCarsResponse:
     properties:
       cars:
@@ -58,34 +53,6 @@ info:
   title: Car App API
   version: "1.0"
 paths:
-  /cars/change:
-    put:
-      consumes:
-      - application/json
-      description: update car
-      parameters:
-      - description: h
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/http.updateCarRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-        "400":
-          description: Bad Request
-          schema:
-            type: integer
-        "500":
-          description: Internal Server Error
-          schema:
-            type: integer
-      summary: UpdateCar
   /cars/delete:
     delete:
       consumes:
@@ -121,11 +88,29 @@ paths:
       description: get cars
       parameters:
       - description: h
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/http.getCarsRequest'
+        in: query
+        name: regNum
+        type: string
+      - description: h
+        in: query
+        name: model
+        type: string
+      - description: h
+        in: query
+        name: mark
+        type: string
+      - description: h
+        in: query
+        name: name
+        type: string
+      - description: h
+        in: query
+        name: surname
+        type: string
+      - description: h
+        in: query
+        name: patronymic
+        type: string
       produces:
       - application/json
       responses:
@@ -170,4 +155,30 @@ paths:
           schema:
             type: integer
       summary: NewCars
+  /cars/update:
+    put:
+      consumes:
+      - application/json
+      description: update car
+      parameters:
+      - description: h
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateCarRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: UpdateCar
 swagger: "2.0"

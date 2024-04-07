@@ -42,6 +42,15 @@ func main() {
 		})
 	}
 
+	defer func() {
+		err = repo.DB.Close()
+		if err != nil {
+			logger.Error("error of closing db", logging.Fields{
+				"error": err,
+			})
+		}
+	}()
+
 	uc := usecase.NewUseCase(repo)
 
 	handler := delivery.NewHandler(uc)

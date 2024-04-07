@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	requestURL = "http://localhost:8089" // write your API URL here
+	requestURL = "/" // write your API URL here
 )
 
 type Handler struct {
@@ -27,26 +27,47 @@ func NewHandler(uc usecase.IUseCase) *Handler {
 // @Description get cars
 // @Accept  json
 // @Produce  json
-// @Param input body getCarsRequest true "h"
+// @Param regNum query string false "regNum"
+// @Param model query string false "model"
+// @Param mark query string false "mark"
+// @Param name query string false "name"
+// @Param surname query string false "surname"
+// @Param patronymic query string false "patronymic"
 // @Success 200 {object} getCarsResponse
-// @Failure 400 {integer} integer 1
-// @Failure 500 {integer} integer 1
+// @Failure 400 {string} string "bad request"
+// @Failure 500 {string} string "internal server error"
 // @Router /cars/get [get]
 func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
-	var reqBody getCarsRequest
+	//var reqBody getCarsRequest
 	var respBody getCarsResponse
 
-	err := json.NewDecoder(r.Body).Decode(&reqBody)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	r.URL.Query().Get("regNum")
 
-	respBody.Cars, err = h.uc.GetCars(reqBody.Filters)
+	//query := mux.Vars(r)
+	var car models.Car
+
+	//err := json.NewDecoder(r.Body).Decode(&reqBody)
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusBadRequest)
+	//	return
+	//}
+
+	car.RegNum = r.URL.Query().Get("regNum")
+	car.Model = r.URL.Query().Get("model")
+	car.Mark = r.URL.Query().Get("mark")
+	car.Owner.Name = r.URL.Query().Get("name")
+	car.Owner.Surname = r.URL.Query().Get("surname")
+	car.Owner.Patronymic = r.URL.Query().Get("patronymic")
+
+	fmt.Println(r.URL.Query().Get("regNum"))
+
+	cars, err := h.uc.GetCars(r.Context(), car)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	respBody.Cars = cars
 
 	bRespBody, err := json.Marshal(respBody)
 	if err != nil {
@@ -66,10 +87,10 @@ func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
 // @Description delete car
 // @Accept  json
 // @Produce  json
-// @Param input body deleteCarRequest true "h"
-// @Success 200 {integer} integer 1
-// @Failure 400 {integer} integer 1
-// @Failure 500 {integer} integer 1
+// @Param input body deleteCarRequest true "deleting car"
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "bad request"
+// @Failure 500 {string} string "internal server error"
 // @Router /cars/delete [delete]
 func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	var reqBody deleteCarRequest
@@ -80,7 +101,7 @@ func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.uc.DeleteCar(reqBody.RegNum)
+	err = h.uc.DeleteCar(r.Context(), reqBody.RegNum)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -94,9 +115,9 @@ func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param input body newCarRequest true "h"
-// @Success 200 {integer} integer 1
-// @Failure 400 {integer} integer 1
-// @Failure 500 {integer} integer 1
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "bad request"
+// @Failure 500 {string} string "internal server error"
 // @Router /cars/new [post]
 func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 	var reqBody newCarRequest
@@ -152,7 +173,7 @@ func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 		cars = append(cars, car)
 	}
 
-	err = h.uc.NewCars(cars)
+	err = h.uc.NewCars(r.Context(), cars)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -164,14 +185,15 @@ func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 // @Summary UpdateCar
 // @Description update car
 // @Accept  json
-// @Produce  json
 // @Param input body updateCarRequest true "h"
-// @Success 200 {integer} integer 1
-// @Failure 400 {integer} integer 1
-// @Failure 500 {integer} integer 1
-// @Router /cars/change [put]
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "bad request"
+// @Failure 500 {string} string "internal server error"
+// @Router /cars/update [put]
 func (h Handler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 	var bodyReq updateCarRequest
+
+	fmt.Println("here")
 
 	err := json.NewDecoder(r.Body).Decode(&bodyReq)
 	if err != nil {
@@ -181,7 +203,7 @@ func (h Handler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(bodyReq.Updates)
 
-	err = h.uc.UpdateCar(bodyReq.Updates, bodyReq.RegNum)
+	err = h.uc.UpdateCar(r.Context(), bodyReq.Updates, bodyReq.RegNum)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

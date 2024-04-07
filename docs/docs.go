@@ -15,49 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/cars/change": {
-            "put": {
-                "description": "update car",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "UpdateCar",
-                "parameters": [
-                    {
-                        "description": "h",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.updateCarRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
         "/cars/delete": {
             "delete": {
                 "description": "delete car",
@@ -113,13 +70,40 @@ const docTemplate = `{
                 "summary": "GetCars",
                 "parameters": [
                     {
+                        "type": "string",
                         "description": "h",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/http.getCarsRequest"
-                        }
+                        "name": "regNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "h",
+                        "name": "model",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "h",
+                        "name": "mark",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "h",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "h",
+                        "name": "surname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "h",
+                        "name": "patronymic",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -186,6 +170,46 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/cars/update": {
+            "put": {
+                "description": "update car",
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "UpdateCar",
+                "parameters": [
+                    {
+                        "description": "h",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.updateCarRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -194,14 +218,6 @@ const docTemplate = `{
             "properties": {
                 "regNum": {
                     "type": "string"
-                }
-            }
-        },
-        "http.getCarsRequest": {
-            "type": "object",
-            "properties": {
-                "filters": {
-                    "$ref": "#/definitions/models.Car"
                 }
             }
         },

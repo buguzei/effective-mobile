@@ -1,10 +1,13 @@
 package usecase
 
-import "github.com/buguzei/effective-mobile/internal/models"
+import (
+	"context"
+	"github.com/buguzei/effective-mobile/internal/models"
+)
 
 type IUseCase interface {
-	NewCars(cars []models.Car) error
-	DeleteCar(regNum string) error
-	UpdateCar(updates models.Car, regNums string) error
-	GetCars(filters models.Car) ([]models.Car, error)
+	NewCars(ctx context.Context, cars []models.Car) error
+	DeleteCar(ctx context.Context, regNum string) error
+	UpdateCar(ctx context.Context, updates models.Car, regNums string) error
+	GetCars(ctx context.Context, filters models.Car) ([]models.Car, error)
 }

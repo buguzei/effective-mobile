@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -31,10 +32,10 @@ func NewPostgres(dbConn string) (*Postgres, error) {
 	return &Postgres{DB: db, L: logger}, nil
 }
 
-func (p Postgres) NewPeople(people models.People) (int, error) {
+func (p Postgres) NewPeople(ctx context.Context, people models.People) (int, error) {
 	const funcName = "NewPeople"
 
-	res := p.DB.QueryRow("INSERT INTO people(name, surname, patronymic) VALUES (($1), ($2), ($3)) RETURNING id;", people.Name, people.Surname, people.Patronymic)
+	res := p.DB.QueryRowContext(ctx, "INSERT INTO people(name, surname, patronymic) VALUES (($1), ($2), ($3)) RETURNING id;", people.Name, people.Surname, people.Patronymic)
 
 	var id int
 	err := res.Scan(&id)
@@ -52,13 +53,13 @@ func (p Postgres) NewPeople(people models.People) (int, error) {
 	return id, nil
 }
 
-func (p Postgres) GetPeopleByID(id int) (*models.People, error) {
+func (p Postgres) GetPeopleByID(ctx context.Context, id int) (*models.People, error) {
 	const funcName = "GetPeopleByID"
 
 	var people models.People
 	people.ID = id
 
-	row := p.DB.QueryRow("SELECT name, surname, patronymic FROM people WHERE id=($1)", id)
+	row := p.DB.QueryRowContext(ctx, "SELECT name, surname, patronymic FROM people WHERE id=($1)", id)
 
 	err := row.Scan(&people.Name, &people.Surname, &people.Patronymic)
 	if err != nil {
@@ -76,12 +77,12 @@ func (p Postgres) GetPeopleByID(id int) (*models.People, error) {
 	return &people, nil
 }
 
-func (p Postgres) GetPeopleByFullName(name, surname, patronymic string) (*int, error) {
+func (p Postgres) GetPeopleByFullName(ctx context.Context, name, surname, patronymic string) (*int, error) {
 	const funcName = "GetPeopleByFullName"
 
 	var peopleID int
 
-	row := p.DB.QueryRow("SELECT id FROM people WHERE name=($1) and surname=($2) and patronymic=($3)", name, surname, patronymic)
+	row := p.DB.QueryRowContext(ctx, "SELECT id FROM people WHERE name=($1) and surname=($2) and patronymic=($3)", name, surname, patronymic)
 
 	err := row.Scan(&peopleID)
 	if err != nil {
@@ -103,10 +104,10 @@ func (p Postgres) GetPeopleByFullName(name, surname, patronymic string) (*int, e
 	return &peopleID, nil
 }
 
-func (p Postgres) NewCar(car models.Car) error {
+func (p Postgres) NewCar(ctx context.Context, car models.Car) error {
 	const funcName = "NewCar"
 
-	_, err := p.DB.Exec("INSERT INTO cars(regnum, mark, model, owner_id) VALUES (($1), ($2), ($3), ($4));",
+	_, err := p.DB.ExecContext(ctx, "INSERT INTO cars(regnum, mark, model, owner_id) VALUES (($1), ($2), ($3), ($4));",
 		car.RegNum,
 		car.Mark,
 		car.Model,
@@ -124,12 +125,12 @@ func (p Postgres) NewCar(car models.Car) error {
 	return nil
 }
 
-func (p Postgres) GetCarByRegNum(regNum string) (*models.Car, error) {
+func (p Postgres) GetCarByRegNum(ctx context.Context, regNum string) (*models.Car, error) {
 	const funcName = "GetCarByRegNum"
 
 	var car models.Car
 
-	row := p.DB.QueryRow("SELECT * FROM cars WHERE regnum=($1);", regNum)
+	row := p.DB.QueryRowContext(ctx, "SELECT * FROM cars WHERE regnum=($1);", regNum)
 
 	err := row.Scan(&car.RegNum, &car.Mark, &car.Model, &car.Owner.ID)
 	if err != nil {
@@ -152,14 +153,14 @@ func (p Postgres) GetCarByRegNum(regNum string) (*models.Car, error) {
 	return &car, nil
 }
 
-func (p Postgres) GetCarsByFilters(filters models.Car) ([]models.Car, error) {
+func (p Postgres) GetCarsByFilters(ctx context.Context, filters models.Car) ([]models.Car, error) {
 	const funcName = "GetCarsByFilters"
 
 	var cars []models.Car
 
 	queryFilter := makeQueryFilter(filters)
 
-	rows, err := p.DB.Query("SELECT regnum, mark, model, name, surname, patronymic FROM cars JOIN people ON cars.owner_id = people.id" + queryFilter)
+	rows, err := p.DB.QueryContext(ctx, "SELECT regnum, mark, model, name, surname, patronymic FROM cars JOIN people ON cars.owner_id = people.id"+queryFilter)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -226,10 +227,10 @@ func makeQueryFilter(filters models.Car) string {
 	return queryFilter[:len(queryFilter)-4]
 }
 
-func (p Postgres) UpdateCar(car models.Car, regNum string) error {
+func (p Postgres) UpdateCar(ctx context.Context, car models.Car, regNum string) error {
 	const funcName = "UpdateCar"
 
-	_, err := p.DB.Exec("UPDATE cars SET regnum=($1), mark = ($2), model = ($3), owner_id = ($4) WHERE regnum=($5);",
+	_, err := p.DB.ExecContext(ctx, "UPDATE cars SET regnum=($1), mark = ($2), model = ($3), owner_id = ($4) WHERE regnum=($5);",
 		car.RegNum,
 		car.Mark,
 		car.Model,
@@ -252,10 +253,10 @@ func (p Postgres) UpdateCar(car models.Car, regNum string) error {
 	return nil
 }
 
-func (p Postgres) DeleteCar(regNum string) error {
+func (p Postgres) DeleteCar(ctx context.Context, regNum string) error {
 	const funcName = "DeleteCar"
 
-	_, err := p.DB.Exec("DELETE FROM cars WHERE regnum=($1);", regNum)
+	_, err := p.DB.ExecContext(ctx, "DELETE FROM cars WHERE regnum=($1);", regNum)
 	if err != nil {
 		p.L.Error("error of executing a query", logging.Fields{
 			"error": err,

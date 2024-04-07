@@ -1,6 +1,9 @@
 package repo
 
-import "github.com/buguzei/effective-mobile/internal/models"
+import (
+	"context"
+	"github.com/buguzei/effective-mobile/internal/models"
+)
 
 type IRepo interface {
 	ICarRepo
@@ -8,15 +11,15 @@ type IRepo interface {
 }
 
 type ICarRepo interface {
-	NewCar(car models.Car) error
-	GetCarsByFilters(filters models.Car) ([]models.Car, error)
-	GetCarByRegNum(regNum string) (*models.Car, error)
-	UpdateCar(updates models.Car, regNum string) error
-	DeleteCar(regNum string) error
+	NewCar(ctx context.Context, car models.Car) error
+	GetCarsByFilters(ctx context.Context, filters models.Car) ([]models.Car, error)
+	GetCarByRegNum(ctx context.Context, regNum string) (*models.Car, error)
+	UpdateCar(ctx context.Context, updates models.Car, regNum string) error
+	DeleteCar(ctx context.Context, regNum string) error
 }
 
 type IPeopleRepo interface {
-	NewPeople(people models.People) (int, error)
-	GetPeopleByFullName(name, surname, patronymic string) (*int, error)
-	GetPeopleByID(id int) (*models.People, error)
+	NewPeople(ctx context.Context, people models.People) (int, error)
+	GetPeopleByFullName(ctx context.Context, name, surname, patronymic string) (*int, error)
+	GetPeopleByID(ctx context.Context, id int) (*models.People, error)
 }
