@@ -7,6 +7,7 @@ import (
 	_ "github.com/buguzei/effective-mobile/docs"
 	"github.com/buguzei/effective-mobile/internal/models"
 	"github.com/buguzei/effective-mobile/internal/usecase"
+	"github.com/buguzei/effective-mobile/pkg/logging"
 	"io"
 	"net/http"
 )
@@ -17,10 +18,14 @@ const (
 
 type Handler struct {
 	uc usecase.IUseCase
+	l  logging.Logger
 }
 
 func NewHandler(uc usecase.IUseCase) *Handler {
-	return &Handler{uc: uc}
+	var logger logging.Logger = logging.NewLogrus("debug")
+	logger = logger.Named("handler")
+
+	return &Handler{uc: uc, l: logger}
 }
 
 // @Summary GetCars
@@ -38,19 +43,13 @@ func NewHandler(uc usecase.IUseCase) *Handler {
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/get [get]
 func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
-	//var reqBody getCarsRequest
+	const funcName = "GetCars"
+
 	var respBody getCarsResponse
 
 	r.URL.Query().Get("regNum")
 
-	//query := mux.Vars(r)
 	var car models.Car
-
-	//err := json.NewDecoder(r.Body).Decode(&reqBody)
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusBadRequest)
-	//	return
-	//}
 
 	car.RegNum = r.URL.Query().Get("regNum")
 	car.Model = r.URL.Query().Get("model")
@@ -59,13 +58,19 @@ func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
 	car.Owner.Surname = r.URL.Query().Get("surname")
 	car.Owner.Patronymic = r.URL.Query().Get("patronymic")
 
-	fmt.Println(r.URL.Query().Get("regNum"))
+	h.l.Debug(fmt.Sprintf("got car's filters: %v", car), logging.Fields{
+		"func": funcName,
+	})
 
 	cars, err := h.uc.GetCars(r.Context(), car)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.l.Debug(fmt.Sprintf("cars to response:: %v", cars), logging.Fields{
+		"func": funcName,
+	})
 
 	respBody.Cars = cars
 
@@ -93,6 +98,8 @@ func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/delete [delete]
 func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
+	const funcName = "DeleteCar"
+
 	var reqBody deleteCarRequest
 
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
@@ -100,6 +107,10 @@ func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	h.l.Info(fmt.Sprintf("regNums od deleting car equals to %v", reqBody.RegNum), logging.Fields{
+		"func": funcName,
+	})
 
 	err = h.uc.DeleteCar(r.Context(), reqBody.RegNum)
 	if err != nil {
@@ -120,6 +131,8 @@ func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/new [post]
 func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
+	const funcName = "NewCars"
+
 	var reqBody newCarRequest
 	var cars []models.Car
 
@@ -135,10 +148,12 @@ func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.l.Debug(fmt.Sprintf("regNums to add: %v", reqBody.RegNums), logging.Fields{
+		"func": funcName,
+	})
+
 	for _, regNum := range reqBody.RegNums {
 		bRefName := []byte(regNum)
-
-		fmt.Println(regNum)
 
 		req, err := http.NewRequest(http.MethodGet, requestURL, bytes.NewBuffer(bRefName))
 		if err != nil {
@@ -152,25 +167,40 @@ func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Printf("client: got response!\n")
-		fmt.Printf("client: status code: %d\n", res.StatusCode)
+		if res.Status == "200" {
+			resBody, err := io.ReadAll(res.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-		resBody, err := io.ReadAll(res.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			var car models.Car
+			err = json.Unmarshal(resBody, &car)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			cars = append(cars, car)
+		}
+
+		if res.Status == "400" {
+			h.l.Info(fmt.Sprintf("400 status code got from API"), logging.Fields{
+				"func": funcName,
+			})
+
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Println(string(resBody))
+		if res.Status == "500" {
+			h.l.Info(fmt.Sprintf("500 status code got from API"), logging.Fields{
+				"func": funcName,
+			})
 
-		var car models.Car
-		err = json.Unmarshal(resBody, &car)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
-
-		cars = append(cars, car)
 	}
 
 	err = h.uc.NewCars(r.Context(), cars)
@@ -191,9 +221,9 @@ func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/update [put]
 func (h Handler) UpdateCar(w http.ResponseWriter, r *http.Request) {
-	var bodyReq updateCarRequest
+	const funcName = "UpdateCar"
 
-	fmt.Println("here")
+	var bodyReq updateCarRequest
 
 	err := json.NewDecoder(r.Body).Decode(&bodyReq)
 	if err != nil {
@@ -201,7 +231,9 @@ func (h Handler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(bodyReq.Updates)
+	h.l.Debug(fmt.Sprintf("gor regNum: %s; got updates: %v", bodyReq.RegNum, bodyReq.Updates), logging.Fields{
+		"func": funcName,
+	})
 
 	err = h.uc.UpdateCar(r.Context(), bodyReq.Updates, bodyReq.RegNum)
 	if err != nil {
