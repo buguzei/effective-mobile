@@ -1,0 +1,173 @@
+basePath: /
+definitions:
+  http.deleteCarRequest:
+    properties:
+      regNum:
+        type: string
+    type: object
+  http.getCarsRequest:
+    properties:
+      filters:
+        $ref: '#/definitions/models.Car'
+    type: object
+  http.getCarsResponse:
+    properties:
+      cars:
+        items:
+          $ref: '#/definitions/models.Car'
+        type: array
+    type: object
+  http.newCarRequest:
+    properties:
+      regNums:
+        items:
+          type: string
+        type: array
+    type: object
+  http.updateCarRequest:
+    properties:
+      regNum:
+        type: string
+      updates:
+        $ref: '#/definitions/models.Car'
+    type: object
+  models.Car:
+    properties:
+      mark:
+        type: string
+      model:
+        type: string
+      owner:
+        $ref: '#/definitions/models.People'
+      regNum:
+        type: string
+    type: object
+  models.People:
+    properties:
+      name:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+host: localhost:8087
+info:
+  contact: {}
+  description: API Server For Car's Catalog
+  title: Car App API
+  version: "1.0"
+paths:
+  /cars/change:
+    put:
+      consumes:
+      - application/json
+      description: update car
+      parameters:
+      - description: h
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.updateCarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: UpdateCar
+  /cars/delete:
+    delete:
+      consumes:
+      - application/json
+      description: delete car
+      parameters:
+      - description: h
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.deleteCarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: DeleteCar
+  /cars/get:
+    get:
+      consumes:
+      - application/json
+      description: get cars
+      parameters:
+      - description: h
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.getCarsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.getCarsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: GetCars
+  /cars/new:
+    post:
+      consumes:
+      - application/json
+      description: new cars
+      parameters:
+      - description: h
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/http.newCarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: NewCars
+swagger: "2.0"
