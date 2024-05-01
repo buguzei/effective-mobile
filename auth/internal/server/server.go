@@ -1,7 +1,7 @@
 package server
 
 import (
-	pb "github.com/buguzei/effective-mobile/protos/gen/auth"
+	pb "github.com/buguzei/effective-mobile/pkg/protos/gen/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"net"

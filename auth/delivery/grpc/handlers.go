@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/buguzei/effective-mobile/auth/internal/usecase"
 	"github.com/buguzei/effective-mobile/pkg/logging"
-	pb "github.com/buguzei/effective-mobile/protos/gen/auth"
+	pb "github.com/buguzei/effective-mobile/pkg/protos/gen/auth"
 )
 
 type AuthHandler struct {
