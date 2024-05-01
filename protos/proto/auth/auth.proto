@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/buguzei/effective-mobile/protos/gen";
+
+service Auth {
+  rpc SignIn (SignInRequest) returns (SignInResponse);
+  rpc SignUp (SignUpRequest) returns (SignUpResponse);
+}
+
+message SignInResponse {
+  string refreshToken = 1;
+  string accessToken = 2;
+}
+
+message SignInRequest {
+  string email = 2;
+  string password = 3;
+}
+
+message SignUpResponse {
+  string refreshToken = 1;
+  string accessToken = 2;
+}
+
+message SignUpRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}

@@ -1,6 +1,8 @@
 package http
 
-import "github.com/buguzei/effective-mobile/internal/models"
+import (
+	"github.com/buguzei/effective-mobile/api-gateway/internal/models"
+)
 
 type newCarRequest struct {
 	RegNums []string `json:"regNums"`

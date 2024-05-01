@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/buguzei/effective-mobile/cars/internal/models"
+	"github.com/buguzei/effective-mobile/cars/internal/usecase"
 	_ "github.com/buguzei/effective-mobile/docs"
-	"github.com/buguzei/effective-mobile/internal/models"
-	"github.com/buguzei/effective-mobile/internal/usecase"
 	"github.com/buguzei/effective-mobile/pkg/logging"
 	"io"
 	"net/http"
@@ -42,6 +42,7 @@ func NewHandler(uc usecase.IUseCase) *Handler {
 // @Failure 400 {string} string "bad request"
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/get [get]
+
 func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
 	const funcName = "GetCars"
 
@@ -97,6 +98,7 @@ func (h Handler) GetCars(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "bad request"
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/delete [delete]
+
 func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	const funcName = "DeleteCar"
 
@@ -130,6 +132,7 @@ func (h Handler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "bad request"
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/new [post]
+
 func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 	const funcName = "NewCars"
 
@@ -220,6 +223,7 @@ func (h Handler) NewCars(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "bad request"
 // @Failure 500 {string} string "internal server error"
 // @Router /cars/update [put]
+
 func (h Handler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 	const funcName = "UpdateCar"
 

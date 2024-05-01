@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	delivery "github.com/buguzei/effective-mobile/cars/internal/delivery/http"
+	"github.com/buguzei/effective-mobile/cars/internal/repo/postgres"
+	"github.com/buguzei/effective-mobile/cars/internal/server"
+	"github.com/buguzei/effective-mobile/cars/internal/usecase"
 	_ "github.com/buguzei/effective-mobile/docs"
-	delivery "github.com/buguzei/effective-mobile/internal/delivery/http"
-	"github.com/buguzei/effective-mobile/internal/repo/postgres"
-	"github.com/buguzei/effective-mobile/internal/server"
-	"github.com/buguzei/effective-mobile/internal/usecase"
 	"github.com/buguzei/effective-mobile/pkg/logging"
 	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"

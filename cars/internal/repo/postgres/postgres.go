@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/buguzei/effective-mobile/internal/models"
+	models2 "github.com/buguzei/effective-mobile/cars/internal/models"
 	"github.com/buguzei/effective-mobile/pkg/logging"
 	_ "github.com/lib/pq"
 )
@@ -32,7 +32,7 @@ func NewPostgres(dbConn string) (*Postgres, error) {
 	return &Postgres{DB: db, L: logger}, nil
 }
 
-func (p Postgres) NewPeople(ctx context.Context, people models.People) (int, error) {
+func (p Postgres) NewPeople(ctx context.Context, people models2.People) (int, error) {
 	const funcName = "NewPeople"
 
 	res := p.DB.QueryRowContext(ctx, "INSERT INTO people(name, surname, patronymic) VALUES (($1), ($2), ($3)) RETURNING id;", people.Name, people.Surname, people.Patronymic)
@@ -53,10 +53,10 @@ func (p Postgres) NewPeople(ctx context.Context, people models.People) (int, err
 	return id, nil
 }
 
-func (p Postgres) GetPeopleByID(ctx context.Context, id int) (*models.People, error) {
+func (p Postgres) GetPeopleByID(ctx context.Context, id int) (*models2.People, error) {
 	const funcName = "GetPeopleByID"
 
-	var people models.People
+	var people models2.People
 	people.ID = id
 
 	row := p.DB.QueryRowContext(ctx, "SELECT name, surname, patronymic FROM people WHERE id=($1)", id)
@@ -104,7 +104,7 @@ func (p Postgres) GetPeopleByFullName(ctx context.Context, name, surname, patron
 	return &peopleID, nil
 }
 
-func (p Postgres) NewCar(ctx context.Context, car models.Car) error {
+func (p Postgres) NewCar(ctx context.Context, car models2.Car) error {
 	const funcName = "NewCar"
 
 	_, err := p.DB.ExecContext(ctx, "INSERT INTO cars(regnum, mark, model, owner_id) VALUES (($1), ($2), ($3), ($4));",
@@ -125,10 +125,10 @@ func (p Postgres) NewCar(ctx context.Context, car models.Car) error {
 	return nil
 }
 
-func (p Postgres) GetCarByRegNum(ctx context.Context, regNum string) (*models.Car, error) {
+func (p Postgres) GetCarByRegNum(ctx context.Context, regNum string) (*models2.Car, error) {
 	const funcName = "GetCarByRegNum"
 
-	var car models.Car
+	var car models2.Car
 
 	row := p.DB.QueryRowContext(ctx, "SELECT * FROM cars WHERE regnum=($1);", regNum)
 
@@ -153,10 +153,10 @@ func (p Postgres) GetCarByRegNum(ctx context.Context, regNum string) (*models.Ca
 	return &car, nil
 }
 
-func (p Postgres) GetCarsByFilters(ctx context.Context, filters models.Car) ([]models.Car, error) {
+func (p Postgres) GetCarsByFilters(ctx context.Context, filters models2.Car) ([]models2.Car, error) {
 	const funcName = "GetCarsByFilters"
 
-	var cars []models.Car
+	var cars []models2.Car
 
 	queryFilter := makeQueryFilter(filters)
 
@@ -175,7 +175,7 @@ func (p Postgres) GetCarsByFilters(ctx context.Context, filters models.Car) ([]m
 	}
 
 	for rows.Next() {
-		var car models.Car
+		var car models2.Car
 
 		err = rows.Scan(&car.RegNum, &car.Mark, &car.Model, &car.Owner.Name, &car.Owner.Surname, &car.Owner.Patronymic)
 		if err != nil {
@@ -197,7 +197,7 @@ func (p Postgres) GetCarsByFilters(ctx context.Context, filters models.Car) ([]m
 	return cars, nil
 }
 
-func makeQueryFilter(filters models.Car) string {
+func makeQueryFilter(filters models2.Car) string {
 	var queryFilter = " WHERE"
 
 	if filters.RegNum != "" {
@@ -227,7 +227,7 @@ func makeQueryFilter(filters models.Car) string {
 	return queryFilter[:len(queryFilter)-4]
 }
 
-func (p Postgres) UpdateCar(ctx context.Context, car models.Car, regNum string) error {
+func (p Postgres) UpdateCar(ctx context.Context, car models2.Car, regNum string) error {
 	const funcName = "UpdateCar"
 
 	_, err := p.DB.ExecContext(ctx, "UPDATE cars SET regnum=($1), mark = ($2), model = ($3), owner_id = ($4) WHERE regnum=($5);",

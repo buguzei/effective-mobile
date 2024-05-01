@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/buguzei/effective-mobile/internal/models"
+	"github.com/buguzei/effective-mobile/cars/internal/models"
 )
 
 type IUseCase interface {

@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"github.com/buguzei/effective-mobile/internal/models"
-	"github.com/buguzei/effective-mobile/internal/repo"
+	"github.com/buguzei/effective-mobile/cars/internal/models"
+	"github.com/buguzei/effective-mobile/cars/internal/repo"
 	"github.com/buguzei/effective-mobile/pkg/logging"
 )
 
