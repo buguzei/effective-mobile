@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package cars;
+
+option go_package = "github.com/buguzei/effective-mobile/pkg/protos/gen";
+
+service Cars {
+  rpc NewCar(NewCarRequest) returns (NewCarResponse);
+  rpc GetCars(GetCarsRequest) returns (GetCarsResponse);
+  rpc UpdateCar(UpdateCarRequest) returns (UpdateCarResponse);
+  rpc DeleteCar(DeleteCarRequest) returns (DeleteCarResponse);
+}
+
+message Car {
+  int32 ownerID = 1;
+  string regNum = 2;
+  string mark = 3;
+  string model = 4;
+}
+
+message NewCarRequest {
+  Car car = 1;
+}
+
+message NewCarResponse {
+  string status = 1;
+}
+
+message GetCarsRequest {
+  Car car = 1;
+}
+
+message GetCarsResponse {
+  repeated Car cars = 1;
+}
+
+message UpdateCarRequest {
+  Car car = 1;
+}
+
+message UpdateCarResponse {
+  string status = 1;
+}
+
+message DeleteCarRequest {
+  string regNum = 1;
+}
+
+message DeleteCarResponse {
+  string status = 1;
+}

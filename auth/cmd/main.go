@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/buguzei/effective-mobile/auth/delivery/grpc"
+	"github.com/buguzei/effective-mobile/auth/internal/delivery/grpc"
 	"github.com/buguzei/effective-mobile/auth/internal/repo/refresh/redis"
 	"github.com/buguzei/effective-mobile/auth/internal/repo/user/postgres"
 	"github.com/buguzei/effective-mobile/auth/internal/server"
@@ -18,7 +18,7 @@ func main() {
 	logger = logger.Named("auth.main")
 
 	// reading .env file
-	err := godotenv.Load()
+	err := godotenv.Load("./auth/cmd/.env")
 	if err != nil {
 		logger.Fatal("reading env file failed", logging.Fields{
 			"error": err,

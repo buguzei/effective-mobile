@@ -1,15 +1,57 @@
-version: '3.9'
+version: "3.9"
 
 services:
-  auth:
-    restart: always
-    build: ./auth/
-    ports:
-      - '8071:8071'
+#  api-gateway:
+#    restart: always
+#    build:
+#      context: ./
+#      dockerfile: ./api-gateway/Dockerfile
+#    ports:
+#      - '8072:8072'
+#    depends_on:
+#      - postgres
+#      - redis
+#  auth:
+#    restart: always
+#    build:
+#      context: ./
+#      dockerfile: ./auth/Dockerfile
+#    ports:
+#      - '8071:8071'
+#    depends_on:
+#      - postgres-auth
+#      - redis
+#  redis:
+#    image: redis
+#    ports:
+#      - "6379:6379"
+#  postgres-auth:
+##    command:
+##      - goose postgres "$DBCONN" up
+#    env_file:
+#      - auth/cmd/.env
+#    image: postgres
+#    ports:
+#      - "5455:5432"
+  cars:
     depends_on:
-      - postgres
-      - redis
-  redis:
-    image: redis
-  postgres:
+      - postgres-cars
+#    command:
+#      - goose postgres 'host=localhost port=5455 user=buguzei password=password dbname=cars sslmode=disable' up
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./cars/Dockerfile
+    ports:
+      - '8074:8074'
+  migrate:
+    depends_on:
+      - postgres-cars
+    image: gomicro/goose
+    command: goose postgres 'host=postgres-cars port=5432 user=buguzei password=password dbname=cars sslmode=disable' up
+  postgres-cars:
+    env_file:
+      - cars/cmd/.env
     image: postgres
+    ports:
+      - "5455:5432"

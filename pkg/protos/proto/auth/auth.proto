@@ -2,11 +2,22 @@ syntax = "proto3";
 
 package auth;
 
-option go_package = "github.com/buguzei/effective-mobile/protos/gen";
+option go_package = "github.com/buguzei/effective-mobile/pkg/protos/gen";
 
 service Auth {
   rpc SignIn (SignInRequest) returns (SignInResponse);
   rpc SignUp (SignUpRequest) returns (SignUpResponse);
+  rpc Refresh (RefreshRequest) returns (RefreshResponse);
+}
+
+message RefreshRequest {
+  string email = 1;
+  string refreshToken = 2;
+}
+
+message RefreshResponse {
+  string refreshToken = 1;
+  string accessToken = 2;
 }
 
 message SignInResponse {

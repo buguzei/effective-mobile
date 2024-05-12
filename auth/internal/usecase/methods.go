@@ -6,8 +6,8 @@ import (
 	errors2 "github.com/buguzei/effective-mobile/auth/internal/errors"
 	"github.com/buguzei/effective-mobile/auth/internal/models"
 	"github.com/buguzei/effective-mobile/auth/internal/repo"
-	"github.com/buguzei/effective-mobile/auth/internal/token"
 	"github.com/buguzei/effective-mobile/pkg/logging"
+	"github.com/buguzei/effective-mobile/pkg/token"
 )
 
 type AuthUC struct {
@@ -23,12 +23,73 @@ func New(rr repo.RefreshRepo, ur repo.UserRepo) *AuthUC {
 	return &AuthUC{l: logger, rr: rr, ur: ur}
 }
 
-func (uc AuthUC) SignIn(ctx context.Context, email, password string) (token.Pair, error) {
-	const f = "AuthUC.SignIn"
+func (uc AuthUC) Refresh(ctx context.Context, email string, refreshToken string) (token.Pair, error) {
+	const f = "AuthUC.Refresh"
 
-	_, id, err := uc.ur.FindUserByEmail(ctx, email, password)
+	user, err := uc.ur.FindUserByEmail(ctx, email)
 	if err != nil {
 		uc.l.Error("error of UserRepo.FindUserByEmail", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
+
+		return token.Pair{}, err
+	}
+
+	actualRefreshToken, err := uc.rr.GetRefresh(ctx, user.ID)
+	if err != nil {
+		uc.l.Error("error of UserRepo.GetRefresh", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
+		return token.Pair{}, err
+	}
+
+	if refreshToken != actualRefreshToken {
+		return token.Pair{}, errors.New("refresh token mismatch")
+	}
+
+	newRefresh, err := token.NewRefreshToken()
+	if err != nil {
+		uc.l.Error("error of Token.NewRefreshToken", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
+		return token.Pair{}, err
+	}
+
+	err = uc.rr.SetRefresh(ctx, newRefresh, user.ID)
+	if err != nil {
+		uc.l.Error("error of SetRefresh", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
+		return token.Pair{}, err
+	}
+
+	newAccess, err := token.NewAccessToken(user.ID)
+	if err != nil {
+		uc.l.Error("error of NewAccessToken", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
+		return token.Pair{}, err
+	}
+
+	newPair := token.Pair{
+		Access:  newAccess,
+		Refresh: newRefresh,
+	}
+
+	return newPair, nil
+}
+
+func (uc AuthUC) SignIn(ctx context.Context, user models.User) (token.Pair, error) {
+	const f = "AuthUC.SignIn"
+
+	user, err := uc.ur.VerifyEmailAndPass(ctx, user.Email, user.Password)
+	if err != nil {
+		uc.l.Error("error of UserRepo.VerifyEmailAndPass", logging.Fields{
 			"error": err,
 			"func":  f,
 		})
@@ -44,9 +105,15 @@ func (uc AuthUC) SignIn(ctx context.Context, email, password string) (token.Pair
 		return token.Pair{}, err
 	}
 
-	uc.rr.SetRefresh(ctx, newRefresh, id)
+	err = uc.rr.SetRefresh(ctx, newRefresh, user.ID)
+	if err != nil {
+		uc.l.Error("error of SetRefresh", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
+	}
 
-	newAccess, err := token.NewAccessToken(id)
+	newAccess, err := token.NewAccessToken(user.ID)
 	if err != nil {
 		uc.l.Error("error of NewAccessToken", logging.Fields{
 			"error": err,
@@ -56,25 +123,28 @@ func (uc AuthUC) SignIn(ctx context.Context, email, password string) (token.Pair
 	}
 
 	newPair := token.Pair{
-		AccessToken:  newAccess,
-		RefreshToken: newRefresh,
+		Access:  newAccess,
+		Refresh: newRefresh,
 	}
 
 	return newPair, nil
 }
 
-func (uc AuthUC) SignUp(ctx context.Context, username, email, password string) (token.Pair, error) {
+func (uc AuthUC) SignUp(ctx context.Context, user models.User) (token.Pair, error) {
 	const f = "AuthUC.SignUp"
 
-	user := models.User{
-		Email:    email,
-		Password: password,
-		Name:     username,
+	exists, err := uc.ur.IsUserExist(ctx, user.Email)
+	if err != nil {
+		uc.l.Error("error of UserRepo.IsUserExist", logging.Fields{
+			"error": err,
+			"func":  f,
+		})
 	}
 
-	_, _, err := uc.ur.FindUserByEmail(ctx, email, password)
-	if err != nil && !errors.Is(err, errors.New(errors2.ErrUserNotFound)) {
-		uc.l.Error("error of UserRepo.FindUserByEmail", logging.Fields{
+	if exists {
+		err = errors.New(errors2.ErrUserAlreadyExists)
+
+		uc.l.Error("error of UserRepo.IsUserExist", logging.Fields{
 			"error": err,
 			"func":  f,
 		})
@@ -99,7 +169,11 @@ func (uc AuthUC) SignUp(ctx context.Context, username, email, password string) (
 		return token.Pair{}, err
 	}
 
-	uc.rr.SetRefresh(ctx, newRefresh, id)
+	err = uc.rr.SetRefresh(ctx, newRefresh, id)
+	if err != nil {
+		uc.l.Error("error of Redis.SetRefresh", logging.Fields{})
+		return token.Pair{}, err
+	}
 
 	newAccess, err := token.NewAccessToken(id)
 	if err != nil {
@@ -111,8 +185,8 @@ func (uc AuthUC) SignUp(ctx context.Context, username, email, password string) (
 	}
 
 	newPair := token.Pair{
-		AccessToken:  newAccess,
-		RefreshToken: newRefresh,
+		Access:  newAccess,
+		Refresh: newRefresh,
 	}
 
 	return newPair, nil

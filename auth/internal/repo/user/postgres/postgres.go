@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
+	errors2 "github.com/buguzei/effective-mobile/auth/internal/errors"
 	"github.com/buguzei/effective-mobile/auth/internal/models"
 	"github.com/buguzei/effective-mobile/pkg/logging"
 	_ "github.com/lib/pq"
@@ -17,7 +19,7 @@ func New() *Postgres {
 	var logger logging.Logger = logging.NewLogrus("debug")
 	logger = logger.Named("auth.postgres")
 
-	db, err := sql.Open("postgres", "host=postgres port=5432 user=postgres password=postgres dbname=auth sslmode=disable")
+	db, err := sql.Open("postgres", "host=postgres-auth port=5432 user=buguzei password=password dbname=auth sslmode=disable")
 	if err != nil {
 		logger.Fatal("error of opening db", logging.Fields{
 			"err": err,
@@ -35,30 +37,60 @@ func New() *Postgres {
 	return &Postgres{DB: db, l: logger}
 }
 
-func (p Postgres) NewUser(ctx context.Context, user models.User) (int, error) {
-	res, err := p.DB.ExecContext(ctx, "INSERT INTO users (username, email, password) VALUES ($1, $2, $3)", user.Name, user.Email, user.Password)
+func (p Postgres) IsUserExist(ctx context.Context, email string) (bool, error) {
+	var exists bool
+
+	row := p.DB.QueryRowContext(ctx, "SELECT EXISTS(SELECT FROM users WHERE email = $1);", email)
+	err := row.Scan(&exists)
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return int(id), nil
+	return exists, nil
 }
 
-func (p Postgres) FindUserByEmail(ctx context.Context, email, password string) (models.User, int, error) {
-	var id int
+func (p Postgres) FindUserByEmail(ctx context.Context, email string) (models.User, error) {
 	var user models.User
 
-	row := p.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE email = $1 AND password = $2", email, password)
+	row := p.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE email = $1;", email)
 
-	err := row.Scan(&id, &user.Name, &user.Email, &user.Password)
+	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password)
 	if err != nil {
-		return models.User{}, 0, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.User{}, errors.New(errors2.ErrUserNotFound)
+		}
+
+		return models.User{}, err
 	}
 
-	return user, id, nil
+	return user, nil
+}
+
+func (p Postgres) NewUser(ctx context.Context, user models.User) (int, error) {
+	res := p.DB.QueryRowContext(ctx, "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id;", user.Name, user.Email, user.Password)
+
+	var id int
+	err := res.Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+func (p Postgres) VerifyEmailAndPass(ctx context.Context, email, password string) (models.User, error) {
+	var user models.User
+
+	row := p.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE email = $1 AND password = $2;", email, password)
+
+	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.User{}, errors.New(errors2.ErrUserNotFound)
+		}
+
+		return models.User{}, err
+	}
+
+	return user, nil
 }

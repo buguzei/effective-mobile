@@ -9,7 +9,7 @@ import (
 )
 
 func Run(auth pb.AuthServer) error {
-	listener, err := net.Listen("tcp", os.Getenv("PORT"))
+	listener, err := net.Listen("tcp", "0.0.0.0:"+os.Getenv("PORT"))
 	if err != nil {
 		return err
 	}

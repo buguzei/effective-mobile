@@ -1,39 +1,26 @@
 package server
 
 import (
-	"context"
-	"net/http"
+	pb "github.com/buguzei/effective-mobile/pkg/protos/gen/cars"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"net"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
-type Server struct {
-	httpServer *http.Server
-}
-
-func NewServer(httpServer *http.Server) *Server {
-	return &Server{httpServer: httpServer}
-}
-
-func (s *Server) Run(port string, handler http.Handler) error {
-	s.httpServer = &http.Server{
-		Addr:    ":" + port,
-		Handler: handler,
-	}
-
-	if err := s.httpServer.ListenAndServe(); err != nil {
+func Run(cars pb.CarsServer) error {
+	listener, err := net.Listen("tcp", "0.0.0.0:"+os.Getenv("PORT"))
+	if err != nil {
 		return err
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	s := grpc.NewServer()
+	reflection.Register(s)
+	pb.RegisterCarsServer(s, cars)
 
-	<-quit
+	if err = s.Serve(listener); err != nil {
+		return err
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	return s.httpServer.Shutdown(ctx)
+	return nil
 }

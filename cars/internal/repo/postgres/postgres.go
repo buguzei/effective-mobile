@@ -32,78 +32,6 @@ func NewPostgres(dbConn string) (*Postgres, error) {
 	return &Postgres{DB: db, L: logger}, nil
 }
 
-func (p Postgres) NewPeople(ctx context.Context, people models2.People) (int, error) {
-	const funcName = "NewPeople"
-
-	res := p.DB.QueryRowContext(ctx, "INSERT INTO people(name, surname, patronymic) VALUES (($1), ($2), ($3)) RETURNING id;", people.Name, people.Surname, people.Patronymic)
-
-	var id int
-	err := res.Scan(&id)
-	if err != nil {
-		p.L.Error("error of scanning", logging.Fields{
-			"error": err,
-			"func":  funcName,
-		})
-	}
-
-	p.L.Debug(fmt.Sprintf("id of new people: %d", id), logging.Fields{
-		"func": funcName,
-	})
-
-	return id, nil
-}
-
-func (p Postgres) GetPeopleByID(ctx context.Context, id int) (*models2.People, error) {
-	const funcName = "GetPeopleByID"
-
-	var people models2.People
-	people.ID = id
-
-	row := p.DB.QueryRowContext(ctx, "SELECT name, surname, patronymic FROM people WHERE id=($1)", id)
-
-	err := row.Scan(&people.Name, &people.Surname, &people.Patronymic)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-
-		p.L.Error("error of scanning", logging.Fields{
-			"error": err,
-			"func":  funcName,
-		})
-		return nil, err
-	}
-
-	return &people, nil
-}
-
-func (p Postgres) GetPeopleByFullName(ctx context.Context, name, surname, patronymic string) (*int, error) {
-	const funcName = "GetPeopleByFullName"
-
-	var peopleID int
-
-	row := p.DB.QueryRowContext(ctx, "SELECT id FROM people WHERE name=($1) and surname=($2) and patronymic=($3)", name, surname, patronymic)
-
-	err := row.Scan(&peopleID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-
-		p.L.Error("error of scanning", logging.Fields{
-			"error": err,
-			"func":  funcName,
-		})
-		return nil, err
-	}
-
-	p.L.Debug(fmt.Sprintf("id of people: %d", peopleID), logging.Fields{
-		"func": funcName,
-	})
-
-	return &peopleID, nil
-}
-
 func (p Postgres) NewCar(ctx context.Context, car models2.Car) error {
 	const funcName = "NewCar"
 
@@ -111,7 +39,7 @@ func (p Postgres) NewCar(ctx context.Context, car models2.Car) error {
 		car.RegNum,
 		car.Mark,
 		car.Model,
-		car.Owner.ID,
+		car.OwnerID,
 	)
 	if err != nil {
 		p.L.Error("error of executing a query", logging.Fields{
@@ -132,7 +60,7 @@ func (p Postgres) GetCarByRegNum(ctx context.Context, regNum string) (*models2.C
 
 	row := p.DB.QueryRowContext(ctx, "SELECT * FROM cars WHERE regnum=($1);", regNum)
 
-	err := row.Scan(&car.RegNum, &car.Mark, &car.Model, &car.Owner.ID)
+	err := row.Scan(&car.RegNum, &car.Mark, &car.Model, &car.OwnerID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -160,7 +88,7 @@ func (p Postgres) GetCarsByFilters(ctx context.Context, filters models2.Car) ([]
 
 	queryFilter := makeQueryFilter(filters)
 
-	rows, err := p.DB.QueryContext(ctx, "SELECT regnum, mark, model, name, surname, patronymic FROM cars JOIN people ON cars.owner_id = people.id"+queryFilter)
+	rows, err := p.DB.QueryContext(ctx, "SELECT regnum, mark, model FROM cars"+queryFilter)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -177,7 +105,7 @@ func (p Postgres) GetCarsByFilters(ctx context.Context, filters models2.Car) ([]
 	for rows.Next() {
 		var car models2.Car
 
-		err = rows.Scan(&car.RegNum, &car.Mark, &car.Model, &car.Owner.Name, &car.Owner.Surname, &car.Owner.Patronymic)
+		err = rows.Scan(&car.RegNum, &car.Mark, &car.Model)
 		if err != nil {
 			p.L.Error("error of scanning", logging.Fields{
 				"error": err,
@@ -212,18 +140,6 @@ func makeQueryFilter(filters models2.Car) string {
 		queryFilter += fmt.Sprintf(" mark='%s' AND", filters.Mark)
 	}
 
-	if filters.Owner.Name != "" {
-		queryFilter += fmt.Sprintf(" name='%s' AND", filters.Owner.Name)
-	}
-
-	if filters.Owner.Surname != "" {
-		queryFilter += fmt.Sprintf(" surname='%s' AND", filters.Owner.Surname)
-	}
-
-	if filters.Owner.Patronymic != "" {
-		queryFilter += fmt.Sprintf(" patronymic='%s' AND", filters.Owner.Patronymic)
-	}
-
 	return queryFilter[:len(queryFilter)-4]
 }
 
@@ -234,7 +150,7 @@ func (p Postgres) UpdateCar(ctx context.Context, car models2.Car, regNum string)
 		car.RegNum,
 		car.Mark,
 		car.Model,
-		car.Owner.ID,
+		car.OwnerID,
 		regNum,
 	)
 	if err != nil {

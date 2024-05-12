@@ -2,24 +2,14 @@ package main
 
 import (
 	"fmt"
-	delivery "github.com/buguzei/effective-mobile/cars/internal/delivery/http"
+	"github.com/buguzei/effective-mobile/cars/internal/delivery/grpc"
 	"github.com/buguzei/effective-mobile/cars/internal/repo/postgres"
 	"github.com/buguzei/effective-mobile/cars/internal/server"
 	"github.com/buguzei/effective-mobile/cars/internal/usecase"
-	_ "github.com/buguzei/effective-mobile/docs"
 	"github.com/buguzei/effective-mobile/pkg/logging"
 	"github.com/joho/godotenv"
-	"github.com/pressly/goose/v3"
-	"net/http"
 	"os"
 )
-
-// @title Car App API
-// @version 1.0
-// @description API Server For Car's Catalog
-
-// @host localhost:8087
-// @BasePath /
 
 func main() {
 	// init Logger
@@ -27,7 +17,7 @@ func main() {
 	logger = logger.Named("main")
 
 	// reading .env file
-	err := godotenv.Load()
+	err := godotenv.Load("./cars/cmd/.env")
 	if err != nil {
 		logger.Fatal("reading env file failed", logging.Fields{
 			"error": err,
@@ -53,31 +43,27 @@ func main() {
 
 	uc := usecase.NewUseCase(repo)
 
-	handler := delivery.NewHandler(uc)
-
-	s := server.NewServer(new(http.Server))
+	handler := grpc.New(uc)
 
 	// making migrations
-	if err = goose.SetDialect("postgres"); err != nil {
-		logger.Fatal("setting dialect failed", logging.Fields{
-			"error": err,
-		})
-	}
-
-	err = goose.Up(repo.DB, "./migrations")
-	if err != nil {
-		logger.Fatal("making migrations failed", logging.Fields{
-			"error": err,
-		})
-	}
+	//if err = goose.SetDialect("postgres"); err != nil {
+	//	logger.Fatal("setting dialect failed", logging.Fields{
+	//		"error": err,
+	//	})
+	//}
+	//
+	//err = goose.Up(repo.DB, "./migrations")
+	//if err != nil {
+	//	logger.Fatal("making migrations failed", logging.Fields{
+	//		"error": err,
+	//	})
+	//}
 
 	// running server
 	logger.Info(fmt.Sprintf("starting listen on port %s", os.Getenv("PORT")), logging.Fields{})
 
-	err = s.Run(os.Getenv("PORT"), handler.InitRoutes())
+	err = server.Run(handler)
 	if err != nil {
-		logger.Fatal("making migrations failed", logging.Fields{
-			"error": err,
-		})
+		panic(err)
 	}
 }
